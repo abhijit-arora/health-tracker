@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2d4a22">
+<title>Health Tracker · स्वास्थ्य</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi:ital@0;1&family=Nunito:wght@600;700;800;900&family=Noto+Sans+Devanagari:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ───────────────────────────────────────────
+   DESIGN: Warm, organic, high-trust medical
+   Palette: Deep forest green + warm cream + saffron accent
+   Feels like: trustworthy, calm, Indian home
+─────────────────────────────────────────── */
+:root {
+  --forest:    #2d4a22;
+  --forest2:   #3d6b2e;
+  --leaf:      #5a9040;
+  --cream:     #faf6ef;
+  --paper:     #fff9f0;
+  --saffron:   #d4680a;
+  --saffron2:  #f08030;
+  --rose:      #c0385a;
+  --rose2:     #e05575;
+  --sky:       #1e6b9a;
+  --danger:    #b82020;
+  --warn:      #b07010;
+  --ok:        #2a7a3a;
+  --text:      #1a2410;
+  --text2:     #4a5e3a;
+  --text3:     #8a9a7a;
+  --border:    #d8e0c8;
+  --shadow-sm: 0 2px 8px rgba(45,74,34,0.10);
+  --shadow:    0 4px 20px rgba(45,74,34,0.14);
+  --shadow-lg: 0 8px 32px rgba(45,74,34,0.18);
+  --r:         18px;
+  --r-sm:      12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Nunito', 'Noto Sans Devanagari', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 540px;
+  margin: 0 auto;
+  overflow-x: hidden;
+}
+
+/* ── TEXTURE overlay ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232d4a22' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(135deg, var(--forest), var(--forest2));
+  color: white;
+  padding: 16px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.22);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.header-title { font-size: 20px; font-weight: 900; letter-spacing: -0.3px; line-height: 1.1; }
+.header-sub { font-size: 12px; opacity: 0.7; font-weight: 600; margin-top: 2px; }
+.lang-btn {
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.35);
+  color: white; border-radius: 30px;
+  padding: 8px 16px; font-family: 'Nunito','Noto Sans Devanagari',sans-serif;
+  font-size: 15px; font-weight: 800; cursor: pointer;
+  transition: background 0.2s;
+}
+.lang-btn:active { background: rgba(255,255,255,0.3); }
+
+/* ── SCREENS ── */
+.screen { display: none; padding: 18px 14px 40px; position: relative; z-index: 1; }
+.screen.active { display: block; animation: rise 0.28s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+
+/* ── LOADING OVERLAY ── */
+#loading-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--forest);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  color: white;
+}
+#loading-overlay .lo-icon { font-size: 52px; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+#loading-overlay .lo-text { font-size: 18px; font-weight: 700; opacity: 0.85; }
+#loading-overlay.hidden { display: none; }
+
+/* ── SETUP BANNER ── */
+.setup-banner {
+  background: linear-gradient(135deg, #fff3cd, #ffeaa0);
+  border: 2.5px solid #f0c040;
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  display: none;
+}
+.setup-banner.show { display: block; }
+.setup-banner-title { font-size: 15px; font-weight: 900; color: #7a5000; margin-bottom: 6px; }
+.setup-banner-body { font-size: 13px; color: #6a4800; line-height: 1.6; }
+
+/* ── SECTION LABEL ── */
+.section-label {
+  font-size: 11px; font-weight: 800; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 1.5px;
+  margin-bottom: 12px; padding-left: 2px;
+}
+
+/* ── DATE STRIP ── */
+.date-strip {
+  background: var(--paper);
+  border: 2px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 11px 16px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-sm);
+}
+.date-strip .ds-icon { font-size: 20px; }
+.date-strip .ds-text { font-size: 15px; font-weight: 700; color: var(--text2); }
+
+/* ── PERSON GRID ── */
+.person-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.person-card {
+  background: var(--paper);
+  border-radius: var(--r);
+  padding: 24px 14px 20px;
+  text-align: center; cursor: pointer;
+  box-shadow: var(--shadow);
+  border: 3px solid transparent;
+  position: relative; overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.person-card:active { transform: scale(0.96); box-shadow: var(--shadow-sm); }
+.person-card .pc-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 5px; border-radius: var(--r) var(--r) 0 0;
+}
+.person-card .pc-avatar {
+  width: 68px; height: 68px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px; margin: 0 auto 12px;
+}
+.person-card .pc-name { font-size: 21px; font-weight: 900; margin-bottom: 3px; }
+.person-card .pc-role { font-size: 13px; color: var(--text3); font-weight: 600; margin-bottom: 10px; }
+.person-card .pc-badge {
+  font-size: 12px; font-weight: 700; color: var(--ok);
+  background: #e8f5e9; border-radius: 20px;
+  padding: 3px 10px; display: inline-block;
+}
+.person-card .pc-pending {
+  font-size: 12px; font-weight: 700; color: var(--saffron);
+  background: #fff3e0; border-radius: 20px;
+  padding: 3px 10px; display: inline-block;
+}
+
+/* ── BACK BTN ── */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 16px; font-weight: 800;
+  color: var(--forest); margin-bottom: 18px; padding: 4px 0;
+}
+
+/* ── WHO BANNER ── */
+.who-banner {
+  border-radius: var(--r); padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 20px; box-shadow: var(--shadow);
+  color: white;
+}
+.wb-avatar { font-size: 38px; }
+.wb-name { font-size: 22px; font-weight: 900; }
+.wb-date { font-size: 13px; opacity: 0.82; font-weight: 600; margin-top: 2px; }
+
+/* ── METRIC CARDS ── */
+.metrics-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.metric-card {
+  background: var(--paper);
+  border-radius: var(--r);
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--border);
+  position: relative;
+}
+.metric-card .mc-accent {
+  position: absolute; left: 0; top: 14px; bottom: 14px;
+  width: 4px; border-radius: 0 4px 4px 0;
+}
+.metric-card-inner { padding-left: 14px; }
+.metric-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.metric-icon { font-size: 24px; }
+.metric-title { font-size: 18px; font-weight: 900; flex: 1; }
+.metric-opt-tag {
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 2px 9px;
+}
+
+/* ── INPUT ROW (for BP: two side-by-side) ── */
+.input-row { display: grid; gap: 10px; }
+.input-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.input-row.cols-1 { grid-template-columns: 1fr; }
+
+.input-group { display: flex; flex-direction: column; gap: 5px; }
+.input-lbl { font-size: 13px; font-weight: 700; color: var(--text2); padding-left: 2px; }
+.input-sublbl { font-size: 11px; color: var(--text3); padding-left: 2px; margin-top: 2px; }
+
+input[type="number"] {
+  width: 100%;
+  font-family: 'Nunito', sans-serif;
+  font-size: 30px; font-weight: 800;
+  color: var(--text);
+  background: var(--cream);
+  border: 2.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 12px 10px;
+  text-align: center; outline: none;
+  -moz-appearance: textfield;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type="number"]:focus {
+  border-color: var(--forest2);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(61,107,46,0.14);
+}
+input[type="number"].val-warn { border-color: var(--warn); }
+input[type="number"].val-danger { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(184,32,32,0.12); }
+
+.unit-tag {
+  font-size: 13px; font-weight: 700; color: var(--text3);
+  text-align: center; margin-top: 4px;
+}
+
+/* ── SUBMIT ── */
+.submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--forest), var(--forest2));
+  color: white; border: none; border-radius: var(--r);
+  padding: 20px; font-family: inherit;
+  font-size: 20px; font-weight: 900; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(45,74,34,0.32);
+  transition: transform 0.15s, box-shadow 0.15s;
+  letter-spacing: 0.2px;
+}
+.submit-btn:active { transform: scale(0.98); box-shadow: none; }
+.submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── SPINNER ── */
+.spin {
+  display: inline-block; width: 20px; height: 20px;
+  border: 3px solid rgba(255,255,255,0.35);
+  border-top-color: white; border-radius: 50%;
+  animation: spinning 0.65s linear infinite;
+  vertical-align: middle; margin-right: 8px;
+}
+@keyframes spinning { to { transform: rotate(360deg); } }
+
+/* ── RESULT SCREEN ── */
+.result-hero {
+  text-align: center; padding: 22px 0 20px;
+}
+.result-check {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--forest), var(--leaf));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; margin: 0 auto 14px;
+  box-shadow: 0 6px 20px rgba(45,74,34,0.3);
+  animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
+}
+@keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+.result-title { font-size: 26px; font-weight: 900; color: var(--forest); margin-bottom: 4px; }
+.result-sub { font-size: 14px; color: var(--text3); font-weight: 600; }
+
+/* ── ALERT BOXES ── */
+.alert-box {
+  border-radius: var(--r-sm); padding: 14px 16px;
+  margin-bottom: 12px; display: none;
+}
+.alert-box.show { display: block; }
+.alert-box.danger { background: #fff0f0; border: 2.5px solid var(--danger); }
+.alert-box.warn { background: #fffbea; border: 2.5px solid #d4a010; }
+.alert-box-title { font-size: 15px; font-weight: 900; margin-bottom: 6px; }
+.alert-box.danger .alert-box-title { color: var(--danger); }
+.alert-box.warn .alert-box-title { color: var(--warn); }
+.alert-box-items { font-size: 14px; line-height: 1.8; font-weight: 600; }
+
+/* ── SUMMARY CARD ── */
+.result-card {
+  background: var(--paper);
+  border-radius: var(--r);
+  padding: 18px; margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--border);
+}
+.rc-title {
+  font-size: 12px; font-weight: 800; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 14px;
+}
+.rc-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0; border-bottom: 1.5px solid var(--border);
+}
+.rc-row:last-child { border-bottom: none; padding-bottom: 0; }
+.rc-metric { display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 700; }
+.rc-value { font-size: 19px; font-weight: 900; color: var(--forest); }
+.rc-value.danger { color: var(--danger); }
+.rc-value.warn { color: var(--warn); }
+
+/* ── TREND CARD ── */
+.trend-tabs {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.trend-tab {
+  padding: 6px 13px; border-radius: 20px; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 800;
+  border: 2px solid var(--border);
+  background: var(--cream); color: var(--text3);
+  transition: all 0.15s;
+}
+.trend-tab.active { background: var(--forest); color: white; border-color: var(--forest); }
+
+.chart-wrap { position: relative; height: 130px; }
+canvas#chart { width: 100% !important; height: 130px !important; display: block; }
+.trend-empty { text-align: center; color: var(--text3); font-size: 14px; font-weight: 700; padding: 30px 0; }
+
+/* ── DONE BTN ── */
+.done-btn {
+  width: 100%; background: linear-gradient(135deg, var(--saffron), var(--saffron2));
+  color: white; border: none; border-radius: var(--r);
+  padding: 19px; font-family: inherit;
+  font-size: 19px; font-weight: 900; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(212,104,10,0.28);
+  margin-top: 4px; transition: transform 0.15s;
+}
+.done-btn:active { transform: scale(0.98); }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay shown while fetching config -->
+<div id="loading-overlay">
+  <div class="lo-icon">🌿</div>
+  <div class="lo-text" id="lo-text">Loading…</div>
+</div>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">🌿</div>
+    <div>
+      <div class="header-title" id="h-title">Health Tracker</div>
+      <div class="header-sub" id="h-sub">स्वास्थ्य ट्रैकर</div>
+    </div>
+  </div>
+  <button class="lang-btn" id="lang-btn" onclick="toggleLang()">हिंदी</button>
+</div>
+
+<!-- ═══ SCREEN 1: HOME — SELECT PERSON ═══ -->
+<div class="screen active" id="screen-home">
+  <div class="setup-banner" id="setup-banner">
+    <div class="setup-banner-title">⚙️ Google Sheets not connected</div>
+    <div class="setup-banner-body">
+      The app is running in <strong>offline mode</strong>. Data is saved on this device only.
+      See the <strong>SETUP-GUIDE.md</strong> file to connect your Google Sheet.
+    </div>
+  </div>
+
+  <div class="date-strip">
+    <span class="ds-icon">📅</span>
+    <span class="ds-text" id="home-date"></span>
+  </div>
+
+  <div class="section-label" id="lbl-choose-person"></div>
+  <div class="person-grid" id="person-grid">
+    <!-- dynamically rendered -->
+  </div>
+</div>
+
+<!-- ═══ SCREEN 2: ENTRY FORM ═══ -->
+<div class="screen" id="screen-entry">
+  <button class="back-btn" onclick="goHome()">← <span id="lbl-back"></span></button>
+
+  <div class="who-banner" id="who-banner">
+    <div class="wb-avatar" id="wb-avatar"></div>
+    <div>
+      <div class="wb-name" id="wb-name"></div>
+      <div class="wb-date" id="wb-date"></div>
+    </div>
+  </div>
+
+  <div class="metrics-list" id="metrics-list">
+    <!-- dynamically rendered from config -->
+  </div>
+
+  <button class="submit-btn" id="submit-btn" onclick="submitEntry()">
+    <span id="submit-label"></span>
+  </button>
+</div>
+
+<!-- ═══ SCREEN 3: RESULT ═══ -->
+<div class="screen" id="screen-result">
+  <div class="result-hero">
+    <div class="result-check">✓</div>
+    <div class="result-title" id="r-title"></div>
+    <div class="result-sub" id="r-sub"></div>
+  </div>
+
+  <div class="alert-box danger" id="alert-danger">
+    <div class="alert-box-title" id="alert-danger-title"></div>
+    <div class="alert-box-items" id="alert-danger-items"></div>
+  </div>
+  <div class="alert-box warn" id="alert-warn">
+    <div class="alert-box-title" id="alert-warn-title"></div>
+    <div class="alert-box-items" id="alert-warn-items"></div>
+  </div>
+
+  <div class="result-card" id="summary-card">
+    <div class="rc-title" id="lbl-today-readings"></div>
+    <div id="summary-rows"></div>
+  </div>
+
+  <div class="result-card">
+    <div class="rc-title" id="lbl-trend"></div>
+    <div class="trend-tabs" id="trend-tabs"></div>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+      <div class="trend-empty" id="trend-empty" style="display:none"></div>
+    </div>
+  </div>
+
+  <button class="done-btn" onclick="goHome()" id="done-btn"></button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG  ← You only change this one line
+// ═══════════════════════════════════════════════════════════
+const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL';
+
+// ═══════════════════════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════════════════════
+const TR = {
+  en: {
+    headerSub:     'स्वास्थ्य ट्रैकर',
+    langBtn:       'हिंदी',
+    choosePerson:  'Who is logging today?',
+    loggedToday:   '✓ Logged today',
+    pendingToday:  'Tap to log',
+    back:          'Back',
+    optional:      'Optional',
+    save:          'Save Reading',
+    saving:        'Saving…',
+    saved:         'Reading Saved!',
+    savedSub:      'Successfully recorded',
+    savedOffline:  'Saved on device (offline)',
+    todayReadings: "Today's Readings",
+    trend7:        '7-Day Trend',
+    trendEmpty:    'Need more readings for trend',
+    done:          '← Back to Home',
+    alertDanger:   '⚠️ Please consult a doctor soon',
+    alertWarn:     '📋 Note these readings',
+    errOneReading: 'Please enter at least one reading.',
+    errBothBP:     'Blood Pressure needs both numbers.',
+    notConnected:  'Not connected to Google Sheets',
+    loading:       'Loading config…',
+    loadFail:      'Could not load config. Using defaults.',
+  },
+  hi: {
+    headerSub:     'Health Tracker',
+    langBtn:       'English',
+    choosePerson:  'आज कौन दर्ज कर रहा है?',
+    loggedToday:   '✓ आज दर्ज किया',
+    pendingToday:  'दर्ज करें',
+    back:          'वापस',
+    optional:      'वैकल्पिक',
+    save:          'सेव करें',
+    saving:        'सेव हो रहा है…',
+    saved:         'सेव हो गया!',
+    savedSub:      'सफलतापूर्वक दर्ज किया गया',
+    savedOffline:  'डिवाइस पर सेव किया (ऑफलाइन)',
+    todayReadings: 'आज की रीडिंग',
+    trend7:        '7 दिन का ट्रेंड',
+    trendEmpty:    'ट्रेंड के लिए और रीडिंग चाहिए',
+    done:          '← होम पर वापस जाएं',
+    alertDanger:   '⚠️ जल्द डॉक्टर से मिलें',
+    alertWarn:     '📋 इन रीडिंग पर ध्यान दें',
+    errOneReading: 'कम से कम एक रीडिंग दर्ज करें।',
+    errBothBP:     'BP के लिए दोनों नंबर दर्ज करें।',
+    notConnected:  'Google Sheets से कनेक्ट नहीं है',
+    loading:       'कॉन्फ़िग लोड हो रहा है…',
+    loadFail:      'कॉन्फ़िग लोड नहीं हो सका। डिफ़ॉल्ट उपयोग किया जा रहा है।',
+  }
+};
+
+// ─── Default config used when sheet isn't connected ───
+const DEFAULT_CONFIG = {
+  persons: [
+    { id: 'mother', name_en: 'Mother', name_hi: 'माँ', role_en: 'माँ', role_hi: 'Mother', color: '#c0385a', avatar: '👩' },
+    { id: 'father', name_en: 'Father', name_hi: 'पिताजी', role_en: 'पिताजी', role_hi: 'Father', color: '#2d4a22', avatar: '👨' },
+  ],
+  parameters: [
+    { id: 'bp_sys',   group: 'bp', label_en: 'Blood Pressure',  label_hi: 'रक्तचाप (BP)',   sub_en: 'Systolic (Upper)',   sub_hi: 'ऊपर वाला नंबर', unit: 'mmHg', min_ok: 90,  max_ok: 140, min_danger: 70,  max_danger: 180, input_min: 60,  input_max: 250, placeholder: '120', required_with: 'bp_dia', active: true },
+    { id: 'bp_dia',   group: 'bp', label_en: 'Blood Pressure',  label_hi: 'रक्तचाप (BP)',   sub_en: 'Diastolic (Lower)', sub_hi: 'नीचे वाला नंबर', unit: 'mmHg', min_ok: 60,  max_ok: 90,  min_danger: 40,  max_danger: 120, input_min: 40,  input_max: 150, placeholder: '80',  required_with: 'bp_sys', active: true },
+    { id: 'heart_rate', group: 'hr', label_en: 'Heart Rate', label_hi: 'हृदय गति', sub_en: 'beats per minute', sub_hi: 'धड़कन प्रति मिनट', unit: 'bpm', min_ok: 60, max_ok: 100, min_danger: 40, max_danger: 150, input_min: 30, input_max: 220, placeholder: '72', active: true },
+    { id: 'weight',  group: 'weight', label_en: 'Weight', label_hi: 'वज़न', sub_en: 'kilograms', sub_hi: 'किलोग्राम', unit: 'kg', min_ok: null, max_ok: null, min_danger: null, max_danger: null, input_min: 20, input_max: 200, placeholder: '65', step: '0.1', active: true },
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let lang         = localStorage.getItem('ht_lang') || 'en';
+let config       = null;   // loaded from sheet or default
+let currentPerson = null;
+let lastEntries  = [];     // entries from last submission
+let activeTrend  = null;   // currently shown trend parameter id
+
+function t(key) { return (TR[lang] && TR[lang][key]) || TR.en[key] || key; }
+function pLabel(p)  { return lang === 'hi' ? (p.name_hi || p.name_en) : p.name_en; }
+function pRole(p)   { return lang === 'hi' ? (p.role_hi || p.role_en) : p.role_en; }
+function pmLabel(m) { return lang === 'hi' ? (m.label_hi || m.label_en) : m.label_en; }
+function pmSub(m)   { return lang === 'hi' ? (m.sub_hi || m.sub_en) : m.sub_en; }
+
+// ═══════════════════════════════════════════════════════════
+//  LOCAL HISTORY  (per person, long-format rows)
+// ═══════════════════════════════════════════════════════════
+function getHistory(personId) {
+  try { return JSON.parse(localStorage.getItem('ht_hist_' + personId) || '[]'); }
+  catch(e) { return []; }
+}
+function saveHistory(personId, rows) {
+  // rows = [{date,parameter,value,unit}, ...]
+  let hist = getHistory(personId);
+  hist = hist.concat(rows);
+  if (hist.length > 200) hist = hist.slice(-200);
+  localStorage.setItem('ht_hist_' + personId, JSON.stringify(hist));
+}
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function hasLoggedToday(personId) {
+  const h = getHistory(personId);
+  return h.some(r => r.date === todayStr());
+}
+function getRecentTrend(personId, paramId, days=7) {
+  const hist = getHistory(personId);
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+  return hist
+    .filter(r => r.parameter === paramId && new Date(r.date) >= cutoff)
+    .slice(-days)
+    .map(r => ({ date: r.date, value: parseFloat(r.value) }))
+    .filter(r => !isNaN(r.value));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD CONFIG FROM GOOGLE SHEET (Apps Script)
+// ═══════════════════════════════════════════════════════════
+async function loadConfig() {
+  document.getElementById('lo-text').textContent = t('loading');
+  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+    config = DEFAULT_CONFIG;
+    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('setup-banner').classList.add('show');
+    renderHome();
+    return;
+  }
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getConfig', { mode: 'cors' });
+    const data = await res.json();
+    if (data && data.persons && data.parameters) {
+      config = data;
+    } else {
+      config = DEFAULT_CONFIG;
+    }
+  } catch(e) {
+    config = DEFAULT_CONFIG;
+    console.warn('Config load failed, using defaults', e);
+  }
+  document.getElementById('loading-overlay').classList.add('hidden');
+  renderHome();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER HOME
+// ═══════════════════════════════════════════════════════════
+function renderHome() {
+  // Header
+  document.getElementById('h-title').textContent  = lang === 'hi' ? 'स्वास्थ्य ट्रैकर' : 'Health Tracker';
+  document.getElementById('h-sub').textContent     = t('headerSub');
+  document.getElementById('lang-btn').textContent  = t('langBtn');
+  document.getElementById('lbl-choose-person').textContent = t('choosePerson');
+
+  // Date
+  const now = new Date();
+  const opts = { weekday:'long', day:'numeric', month:'long', year:'numeric' };
+  document.getElementById('home-date').textContent =
+    now.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', opts);
+
+  // Person cards
+  const grid = document.getElementById('person-grid');
+  grid.innerHTML = '';
+  config.persons.filter(p => p.active !== false).forEach(p => {
+    const logged = hasLoggedToday(p.id);
+    const card = document.createElement('div');
+    card.className = 'person-card';
+    card.onclick = () => selectPerson(p.id);
+    card.innerHTML = `
+      <div class="pc-bar" style="background:linear-gradient(90deg,${p.color},${p.color}aa)"></div>
+      <div class="pc-avatar" style="background:${p.color}18">${p.avatar || '👤'}</div>
+      <div class="pc-name" style="color:${p.color}">${pLabel(p)}</div>
+      <div class="pc-role">${pRole(p)}</div>
+      <div class="${logged ? 'pc-badge' : 'pc-pending'}">${logged ? t('loggedToday') : t('pendingToday')}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SELECT PERSON → ENTRY SCREEN
+// ═══════════════════════════════════════════════════════════
+function selectPerson(personId) {
+  currentPerson = config.persons.find(p => p.id === personId);
+  renderEntryForm();
+  showScreen('screen-entry');
+}
+
+function renderEntryForm() {
+  const p = currentPerson;
+  // Banner
+  const banner = document.getElementById('who-banner');
+  banner.style.background = `linear-gradient(135deg, ${p.color}, ${p.color}cc)`;
+  document.getElementById('wb-avatar').textContent = p.avatar || '👤';
+  document.getElementById('wb-name').textContent = pLabel(p);
+  const now = new Date();
+  document.getElementById('wb-date').textContent =
+    now.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday:'long', day:'numeric', month:'long' });
+
+  document.getElementById('lbl-back').textContent = t('back');
+  document.getElementById('submit-label').textContent = t('save');
+
+  // Group parameters by group id (e.g. 'bp' shows as one card with two inputs)
+  const active = config.parameters.filter(pm => pm.active !== false);
+  const groups = [];
+  const seen = {};
+  active.forEach(pm => {
+    const gkey = pm.group || pm.id;
+    if (!seen[gkey]) { seen[gkey] = true; groups.push(gkey); }
+  });
+
+  const list = document.getElementById('metrics-list');
+  list.innerHTML = '';
+
+  // Accent colours per group
+  const accentMap = { bp:'#b82020', hr:'#d4680a', weight:'#2a7a3a' };
+
+  groups.forEach(gkey => {
+    const members = active.filter(pm => (pm.group || pm.id) === gkey);
+    const first = members[0];
+    const accent = accentMap[gkey] || currentPerson.color;
+
+    const card = document.createElement('div');
+    card.className = 'metric-card';
+    card.dataset.group = gkey;
+
+    const isCols2 = members.length > 1;
+
+    const inputsHTML = members.map(pm => `
+      <div class="input-group">
+        <div class="input-lbl">${pmSub(pm)}</div>
+        <input type="number"
+          id="inp-${pm.id}"
+          min="${pm.input_min||0}" max="${pm.input_max||999}"
+          step="${pm.step||1}"
+          placeholder="${pm.placeholder||''}"
+          inputmode="${pm.step && parseFloat(pm.step)<1 ? 'decimal' : 'numeric'}"
+          oninput="validateInput(this, ${JSON.stringify(pm)})"
+        >
+        <div class="input-sublbl">${pmLabel(pm)} · ${pm.unit}</div>
+      </div>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="mc-accent" style="background:${accent}"></div>
+      <div class="metric-card-inner">
+        <div class="metric-header">
+          <span class="metric-icon">${groupIcon(gkey)}</span>
+          <span class="metric-title">${pmLabel(first)}</span>
+          <span class="metric-opt-tag">${t('optional')}</span>
+        </div>
+        <div class="input-row ${isCols2 ? 'cols-2' : 'cols-1'}">
+          ${inputsHTML}
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function groupIcon(gkey) {
+  return { bp:'🫀', hr:'💓', weight:'⚖️', sugar:'🩸', spo2:'💨', pulse:'📡' }[gkey] || '📊';
+}
+
+function validateInput(el, pm) {
+  el.classList.remove('val-warn','val-danger');
+  const v = parseFloat(el.value);
+  if (isNaN(v) || el.value === '') return;
+  if (pm.max_danger && v >= pm.max_danger) { el.classList.add('val-danger'); return; }
+  if (pm.min_danger && v <= pm.min_danger) { el.classList.add('val-danger'); return; }
+  if (pm.max_ok && v > pm.max_ok)          { el.classList.add('val-warn'); return; }
+  if (pm.min_ok && v < pm.min_ok)          { el.classList.add('val-warn'); return; }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SUBMIT
+// ═══════════════════════════════════════════════════════════
+async function submitEntry() {
+  const active = config.parameters.filter(pm => pm.active !== false);
+  const rows = [];
+  const errors = [];
+
+  // Collect values
+  active.forEach(pm => {
+    const el = document.getElementById('inp-' + pm.id);
+    if (!el) return;
+    const raw = el.value.trim();
+    if (raw !== '') rows.push({ paramId: pm.id, value: parseFloat(raw), pm });
+  });
+
+  // Validate: at least one entry
+  if (rows.length === 0) { alert(t('errOneReading')); return; }
+
+  // Validate: paired fields (bp_sys requires bp_dia)
+  active.forEach(pm => {
+    if (!pm.required_with) return;
+    const hasThis  = rows.some(r => r.paramId === pm.id);
+    const hasOther = rows.some(r => r.paramId === pm.required_with);
+    if (hasThis && !hasOther) errors.push(t('errBothBP'));
+    if (!hasThis && hasOther) errors.push(t('errBothBP'));
+  });
+  if ([...new Set(errors)].length) { alert([...new Set(errors)].join('\n')); return; }
+
+  // Build log rows (long format)
+  const now = new Date();
+  const dateStr = todayStr();
+  const timeStr = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  const ts = now.toISOString();
+
+  const logRows = rows.map(r => ({
+    date:      dateStr,
+    time:      timeStr,
+    person:    currentPerson.id,
+    parameter: r.paramId,
+    value:     r.value,
+    unit:      r.pm.unit,
+    timestamp: ts
+  }));
+
+  lastEntries = rows;
+
+  // Save locally
+  saveHistory(currentPerson.id, logRows);
+
+  // Submit to sheet
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  document.getElementById('submit-label').innerHTML = `<span class="spin"></span>${t('saving')}`;
+
+  let sheetOk = false;
+  if (SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL') {
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'log', rows: logRows })
+      });
+      sheetOk = true;
+    } catch(e) { console.warn('Sheet write failed', e); }
+  }
+
+  btn.disabled = false;
+  document.getElementById('submit-label').textContent = t('save');
+  clearForm();
+  showResultScreen(rows, sheetOk);
+}
+
+function clearForm() {
+  config.parameters.forEach(pm => {
+    const el = document.getElementById('inp-' + pm.id);
+    if (el) { el.value = ''; el.classList.remove('val-warn','val-danger'); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESULT SCREEN
+// ═══════════════════════════════════════════════════════════
+function showResultScreen(rows, sheetOk) {
+  document.getElementById('r-title').textContent = t('saved');
+  document.getElementById('r-sub').textContent = sheetOk ? t('savedSub') : t('savedOffline');
+  document.getElementById('lbl-today-readings').textContent = t('todayReadings');
+  document.getElementById('lbl-trend').textContent = t('trend7');
+  document.getElementById('done-btn').textContent = t('done');
+
+  // Abnormal alerts
+  const dangers = [], warns = [];
+  rows.forEach(r => {
+    const pm = r.pm;
+    const v = r.value;
+    const label = pmLabel(pm);
+    if (pm.max_danger && v >= pm.max_danger) dangers.push(`${label}: ${v} ${pm.unit}`);
+    else if (pm.min_danger && v <= pm.min_danger) dangers.push(`${label}: ${v} ${pm.unit}`);
+    else if (pm.max_ok && v > pm.max_ok)          warns.push(`${label}: ${v} ${pm.unit}`);
+    else if (pm.min_ok && v < pm.min_ok)           warns.push(`${label}: ${v} ${pm.unit}`);
+  });
+  const dBox = document.getElementById('alert-danger');
+  const wBox = document.getElementById('alert-warn');
+  dBox.classList.toggle('show', dangers.length > 0);
+  wBox.classList.toggle('show', warns.length > 0);
+  document.getElementById('alert-danger-title').textContent = t('alertDanger');
+  document.getElementById('alert-warn-title').textContent   = t('alertWarn');
+  document.getElementById('alert-danger-items').innerHTML = dangers.map(d=>`• ${d}`).join('<br>');
+  document.getElementById('alert-warn-items').innerHTML   = warns.map(w=>`• ${w}`).join('<br>');
+
+  // Summary rows
+  const sumDiv = document.getElementById('summary-rows');
+  sumDiv.innerHTML = '';
+  // Group bp_sys+bp_dia together for display
+  const displayed = new Set();
+  rows.forEach(r => {
+    if (displayed.has(r.paramId)) return;
+    const pm = r.pm;
+    const gkey = pm.group || pm.id;
+    const siblings = rows.filter(s => (s.pm.group||s.pm.id) === gkey);
+    displayed.add(r.paramId);
+    siblings.forEach(s => displayed.add(s.paramId));
+
+    const isDanger = dangers.some(d => d.startsWith(pmLabel(pm)));
+    const isWarn   = warns.some(d => d.startsWith(pmLabel(pm)));
+    const valCls   = isDanger ? 'danger' : isWarn ? 'warn' : '';
+
+    let valText;
+    if (siblings.length > 1) {
+      valText = siblings.map(s => s.value).join('/') + ' ' + pm.unit;
+    } else {
+      valText = `${r.value} ${pm.unit}`;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'rc-row';
+    row.innerHTML = `
+      <div class="rc-metric">${groupIcon(gkey)} ${pmLabel(siblings[0])}</div>
+      <div class="rc-value ${valCls}">${valText}</div>
+    `;
+    sumDiv.appendChild(row);
+  });
+
+  // Trend tabs — use unique groups
+  const groups = [...new Set(rows.map(r => r.pm.group || r.pm.id))];
+  const tabsDiv = document.getElementById('trend-tabs');
+  tabsDiv.innerHTML = '';
+  groups.forEach((gkey, i) => {
+    const pm = rows.find(r => (r.pm.group||r.pm.id) === gkey).pm;
+    const btn = document.createElement('button');
+    btn.className = 'trend-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = pmLabel(pm);
+    btn.onclick = () => {
+      tabsDiv.querySelectorAll('.trend-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      drawTrend(gkey, rows);
+    };
+    tabsDiv.appendChild(btn);
+  });
+
+  // Draw first trend
+  if (groups.length) drawTrend(groups[0], rows);
+
+  showScreen('screen-result');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SPARKLINE CHART
+// ═══════════════════════════════════════════════════════════
+function drawTrend(gkey, rows) {
+  const canvas = document.getElementById('chart');
+  const empty  = document.getElementById('trend-empty');
+
+  // Get all params in this group
+  const groupParams = config.parameters.filter(pm => (pm.group||pm.id) === gkey && pm.active !== false);
+  const colors = ['#2d4a22','#b82020','#d4680a','#1e6b9a'];
+
+  // Collect series per parameter
+  const series = groupParams.map((pm, i) => ({
+    pm, color: colors[i] || '#555',
+    points: getRecentTrend(currentPerson.id, pm.id, 7)
+  })).filter(s => s.points.length > 0);
+
+  if (series.length === 0 || Math.max(...series.map(s=>s.points.length)) < 1) {
+    canvas.style.display = 'none';
+    empty.style.display  = 'block';
+    empty.textContent    = t('trendEmpty');
+    return;
+  }
+  canvas.style.display = 'block';
+  empty.style.display  = 'none';
+
+  const W = canvas.offsetWidth || 460;
+  const H = 130;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l:40, r:12, t:14, b:26 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  // Unified x-axis: all unique dates across series
+  const allDates = [...new Set(series.flatMap(s => s.points.map(p => p.date)))].sort();
+  if (allDates.length < 2) {
+    canvas.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  // Y range
+  const allVals = series.flatMap(s => s.points.map(p => p.value));
+  const minV = Math.min(...allVals);
+  const maxV = Math.max(...allVals);
+  const range = maxV - minV || 10;
+
+  const sx = i => pad.l + (i / (allDates.length - 1)) * cW;
+  const sy = v => pad.t + cH - ((v - minV) / range * cH);
+
+  // Grid lines
+  ctx.strokeStyle = '#d8e0c8'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 3; i++) {
+    const y = pad.t + (i / 3) * cH;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const label = Math.round(maxV - (i / 3) * range);
+    ctx.fillStyle = '#8a9a7a'; ctx.font = 'bold 11px Nunito,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(label, pad.l - 5, y + 4);
+  }
+
+  // Draw each series
+  series.forEach(s => {
+    // Map points to x positions
+    const pts = s.points.map(p => ({
+      x: sx(allDates.indexOf(p.date)),
+      y: sy(p.value),
+      v: p.value, d: p.date
+    }));
+
+    // Line
+    ctx.beginPath();
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.strokeStyle = s.color; ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round'; ctx.setLineDash([]);
+    ctx.stroke();
+
+    // Dots
+    pts.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+      ctx.fillStyle = s.color; ctx.fill();
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+    });
+  });
+
+  // X labels (dates)
+  ctx.fillStyle = '#8a9a7a'; ctx.font = 'bold 11px Nunito,sans-serif';
+  allDates.forEach((d, i) => {
+    const dt = new Date(d + 'T00:00:00');
+    const lbl = dt.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day:'numeric', month:'short' });
+    ctx.textAlign = i === 0 ? 'left' : i === allDates.length-1 ? 'right' : 'center';
+    ctx.fillText(lbl, sx(i), H - 4);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function goHome() {
+  currentPerson = null;
+  renderHome();
+  showScreen('screen-home');
+}
+function toggleLang() {
+  lang = lang === 'en' ? 'hi' : 'en';
+  localStorage.setItem('ht_lang', lang);
+  if (document.getElementById('screen-home').classList.contains('active')) renderHome();
+  else if (document.getElementById('screen-entry').classList.contains('active')) renderEntryForm();
+  document.getElementById('h-title').textContent = lang === 'hi' ? 'स्वास्थ्य ट्रैकर' : 'Health Tracker';
+  document.getElementById('h-sub').textContent   = t('headerSub');
+  document.getElementById('lang-btn').textContent = t('langBtn');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+loadConfig();
+</script>
+</body>
+</html>
