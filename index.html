@@ -461,7 +461,7 @@ canvas#chart { width: 100% !important; height: 130px !important; display: block;
 // ═══════════════════════════════════════════════════════════
 //  CONFIG  ← You only change this one line
 // ═══════════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzEHGsdX6Js47NUaZwwEpoeIZr3wD2w5rzDTg5YDkbGuyIk_C0MMOgesQ1jvTWqTvfxYg/exec';
+const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL';
 
 // ═══════════════════════════════════════════════════════════
 //  TRANSLATIONS
@@ -540,6 +540,7 @@ let lang         = localStorage.getItem('ht_lang') || 'en';
 let config       = null;   // loaded from sheet or default
 let currentPerson = null;
 let lastEntries  = [];     // entries from last submission
+let lastResultData = null; // { rows, sheetOk } — kept for lang re-render
 let activeTrend  = null;   // currently shown trend parameter id
 
 function t(key) { return (TR[lang] && TR[lang][key]) || TR.en[key] || key; }
@@ -556,7 +557,7 @@ function getHistory(personId) {
   catch(e) { return []; }
 }
 function saveHistory(personId, rows) {
-  // rows = [{date,parameter,value,unit}, ...]
+  // rows = [{local_date,local_time,timezone,parameter,value,unit,...}, ...]
   let hist = getHistory(personId);
   hist = hist.concat(rows);
   if (hist.length > 200) hist = hist.slice(-200);
@@ -565,15 +566,20 @@ function saveHistory(personId, rows) {
 function todayStr() { return new Date().toISOString().split('T')[0]; }
 function hasLoggedToday(personId) {
   const h = getHistory(personId);
-  return h.some(r => r.date === todayStr());
+  const today = [
+    new Date().getFullYear(),
+    String(new Date().getMonth()+1).padStart(2,'0'),
+    String(new Date().getDate()).padStart(2,'0')
+  ].join('-');
+  return h.some(r => (r.local_date || r.date) === today);
 }
 function getRecentTrend(personId, paramId, days=7) {
   const hist = getHistory(personId);
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
   return hist
-    .filter(r => r.parameter === paramId && new Date(r.date) >= cutoff)
+    .filter(r => r.parameter === paramId && new Date((r.local_date || r.date) + 'T00:00:00') >= cutoff)
     .slice(-days)
-    .map(r => ({ date: r.date, value: parseFloat(r.value) }))
+    .map(r => ({ date: r.local_date || r.date, value: parseFloat(r.value) }))
     .filter(r => !isNaN(r.value));
 }
 
@@ -766,21 +772,28 @@ async function submitEntry() {
 
   // Build log rows (long format)
   const now = new Date();
-  const dateStr = todayStr();
-  const timeStr = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  const localeDateStr = [
+    now.getFullYear(),
+    String(now.getMonth()+1).padStart(2,'0'),
+    String(now.getDate()).padStart(2,'0')
+  ].join('-');
+  const localeTimeStr = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12: true });
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const ts = now.toISOString();
 
   const logRows = rows.map(r => ({
-    date:      dateStr,
-    time:      timeStr,
-    person:    currentPerson.id,
-    parameter: r.paramId,
-    value:     r.value,
-    unit:      r.pm.unit,
-    timestamp: ts
+    local_date: localeDateStr,
+    local_time: localeTimeStr,
+    timezone:   timezone,
+    person:     currentPerson.id,
+    parameter:  r.paramId,
+    value:      r.value,
+    unit:       r.pm.unit,
+    utc_timestamp: ts
   }));
 
   lastEntries = rows;
+  lastResultData = { rows, sheetOk: false }; // will be updated after sheet call
 
   // Save locally
   saveHistory(currentPerson.id, logRows);
@@ -805,6 +818,7 @@ async function submitEntry() {
   btn.disabled = false;
   document.getElementById('submit-label').textContent = t('save');
   clearForm();
+  lastResultData = { rows, sheetOk };
   showResultScreen(rows, sheetOk);
 }
 
@@ -858,8 +872,9 @@ function showResultScreen(rows, sheetOk) {
     displayed.add(r.paramId);
     siblings.forEach(s => displayed.add(s.paramId));
 
-    const isDanger = dangers.some(d => d.startsWith(pmLabel(pm)));
-    const isWarn   = warns.some(d => d.startsWith(pmLabel(pm)));
+    const siblingLabels = siblings.map(s => pmLabel(s.pm));
+    const isDanger = dangers.some(d => siblingLabels.some(l => d.startsWith(l)));
+    const isWarn   = warns.some(d => siblingLabels.some(l => d.startsWith(l)));
     const valCls   = isDanger ? 'danger' : isWarn ? 'warn' : '';
 
     let valText;
@@ -872,7 +887,7 @@ function showResultScreen(rows, sheetOk) {
     const row = document.createElement('div');
     row.className = 'rc-row';
     row.innerHTML = `
-      <div class="rc-metric">${groupIcon(gkey)} ${pmLabel(siblings[0])}</div>
+      <div class="rc-metric">${groupIcon(gkey)} ${pmLabel(siblings[0].pm)}</div>
       <div class="rc-value ${valCls}">${valText}</div>
     `;
     sumDiv.appendChild(row);
@@ -1016,11 +1031,16 @@ function goHome() {
 function toggleLang() {
   lang = lang === 'en' ? 'hi' : 'en';
   localStorage.setItem('ht_lang', lang);
-  if (document.getElementById('screen-home').classList.contains('active')) renderHome();
-  else if (document.getElementById('screen-entry').classList.contains('active')) renderEntryForm();
-  document.getElementById('h-title').textContent = lang === 'hi' ? 'स्वास्थ्य ट्रैकर' : 'Health Tracker';
-  document.getElementById('h-sub').textContent   = t('headerSub');
+  document.getElementById('h-title').textContent  = lang === 'hi' ? 'स्वास्थ्य ट्रैकर' : 'Health Tracker';
+  document.getElementById('h-sub').textContent    = t('headerSub');
   document.getElementById('lang-btn').textContent = t('langBtn');
+  if (document.getElementById('screen-home').classList.contains('active')) {
+    renderHome();
+  } else if (document.getElementById('screen-entry').classList.contains('active')) {
+    renderEntryForm();
+  } else if (document.getElementById('screen-result').classList.contains('active')) {
+    if (lastResultData) showResultScreen(lastResultData.rows, lastResultData.sheetOk);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
